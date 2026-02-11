@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 Система бронирования аудиторий</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .tab {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .content {
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Чат */
+        .chat-area {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 15px;
+        }
+
+        .message.user .message-bubble {
+            background: #667eea;
+            color: white;
+        }
+
+        .message.bot .message-bubble {
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        input, select, textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Форма бронирования */
+        .booking-form {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 600px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* Карточки аудиторий */
+        .room-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .room-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102,126,234,0.2);
+        }
+
+        .room-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .room-card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .room-card p {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        /* Список броней */
+        .booking-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .booking-item {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .booking-item h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .booking-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Ручной поиск */
+        .manual-search {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-results {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Центрированное уведомление */
+        .center-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+            z-index: 9999;
+            text-align: center;
+            font-size: 16px;
+            max-width: 80%;
+        }
+
+        .center-toast-success {
+            border-left: 5px solid #28a745;
+            color: #155724;
+        }
+
+        .center-toast-error {
+            border-left: 5px solid #dc3545;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Система бронирования аудиторий</h1>
+            <p>Университет  ALT</p>
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('chat')">💬 Поиск аудиторий</button>
+                <button class="tab" onclick="switchTab('booking')">📝 Бронирование</button>
+                <button class="tab" onclick="switchTab('list')">📋 Мои брони</button>
+                <button class="tab" onclick="switchTab('manual')">🔍 Ручной поиск</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Вкладка: Чат -->
+            <div id="chat" class="tab-content active">
+                <div class="chat-area" id="chatArea">
+                    <div class="message bot">
+                        <div class="message-bubble">
+                            👋 Привет! Я помогу найти подходящую аудиторию.<br>
+                            Опиши что нужно (количество мест, оборудование).
+                        </div>
+                    </div>
+                </div>
+                <div class="input-area">
+                    <input type="text" id="chatInput" placeholder="Например: Нужна аудитория на 30 человек с проектором..."
+                           onkeypress="if(event.key==='Enter') sendMessage()" style="flex: 1;">
+                    <button onclick="sendMessage()">Отправить</button>
+                </div>
+            </div>
+
+            <!-- Вкладка: Бронирование -->
+            <div id="booking" class="tab-content">
+                <div id="bookingAlert"></div>
+
+                <div class="booking-form">
+                    <h2 style="margin-bottom: 20px;">Создать бронирование</h2>
+
+                    <div class="form-group">
+                        <label>🏫 Выбор аудитории</label>
+                        <div id="roomsList"></div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>👤 Преподаватель</label>
+                            <input type="text" id="teacherName" placeholder="ФИО" required>
+                        </div>
+                        <div class="form-group">
+                            <label>👥 Группа</label>
+                            <input type="text" id="groupName" placeholder="Например: ПИ-4">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>📅 Дата</label>
+                            <input type="date" id="bookingDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>👥 Количество студентов</label>
+                            <input type="number" id="studentsCount" min="1" placeholder="25">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>⏰ Время начала</label>
+                            <input type="time" id="timeStart" value="10:00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>⏰ Время окончания</label>
+                            <input type="time" id="timeEnd" value="12:00" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>🔧 Необходимое оборудование</label>
+                        <input type="text" id="equipmentNeeded" placeholder="Проектор, компьютеры...">
+                    </div>
+
+                    <button onclick="createBooking()" style="width: 100%; padding: 15px; font-size: 16px;">
+                        ✅ Забронировать
+                    </button>
+                </div>
+            </div>
+
+            <!-- Вкладка: Список броней -->
+            <div id="list" class="tab-content">
+                <h2 style="margin-bottom: 20px;">📋 Активные бронирования</h2>
+                <div class="booking-list" id="bookingsList"></div>
+            </div>
+
+            <!-- Вкладка: Ручной поиск -->
+            <div id="manual" class="tab-content">
+                <h2 style="margin-bottom: 20px;">🔍 Ручной поиск аудиторий</h2>
+
+                <div class="manual-search">
+                    <div class="search-controls">
+                        <div>
+                            <label>Корпус</label>
+                            <select id="manualBuilding">
+                                <option value="">Все корпуса</option>
+                                <option value="1">Корпус 1</option>
+                                <option value="2">Корпус 2</option>
+                                <option value="3">Корпус 3</option>
+                                <option value="4">Корпус 4</option>
+                                <option value="В">Корпус В</option>
+                                <option value="О">Корпус О</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Этаж</label>
+                            <select id="manualFloor">
+                                <option value="">Все этажи</option>
+                                <option value="0">0 этаж</option>
+                                <option value="1">1 этаж</option>
+                                <option value="2">2 этаж</option>
+                                <option value="3">3 этаж</option>
+                                <option value="4">4 этаж</option>
+                                <option value="5">5 этаж</option>
+                                <option value="6">6 этаж</option>
+                                <option value="7">7 этаж</option>
+                                <option value="8">8 этаж</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Тип аудитории</label>
+                            <select id="manualType">
+                                <option value="">Все типы</option>
+                                <option value="Лекционная">Лекционная</option>
+                                <option value="Компьютерный класс">Компьютерный класс</option>
+                                <option value="Лаборатория">Лаборатория</option>
+                                <option value="Конференц-зал">Конференц-зал</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Минимальная вместимость</label>
+                        <input type="number" id="manualCapacity" placeholder="Например: 20">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Оборудование</label>
+                        <input type="text" id="manualEquipment" placeholder="Проектор, компьютеры...">
+                    </div>
+
+                    <button onclick="searchManualRooms()" style="width: 100%; padding: 12px; margin-bottom: 20px;">
+                        🔍 Найти аудитории
+                    </button>
+
+                    <div class="search-results" id="manualResults"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let selectedRoomNumber = null;
+        let lastSearchResults = []; // ← Сохраняем результаты последнего поиска
+        let lastCapacityFromChat = null; // ← Число студентов из последнего сообщения
+
+        // Переключение вкладок
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'booking') loadRooms();
+            if (tabName === 'list') loadBookings();
+            if (tabName === 'manual') clearManualSearch();
+        }
+
+        // Чат
+        function addChatMessage(text, isUser = false) {
+            const chatArea = document.getElementById('chatArea');
+            const msg = document.createElement('div');
+            msg.className = `message ${isUser ? 'user' : 'bot'}`;
+            msg.innerHTML = `<div class="message-bubble">${text}</div>`;
+            chatArea.appendChild(msg);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Пытаемся извлечь число студентов из сообщения (например "на 20 человек")
+            const numbers = message.match(/\d+/);
+            if (numbers && numbers.length > 0) {
+                lastCapacityFromChat = parseInt(numbers[0]);
+                // Если пользователь ещё не вводил вручную количество студентов – подставляем
+                const studentsInput = document.getElementById('studentsCount');
+                if (studentsInput && !studentsInput.value) {
+                    studentsInput.value = lastCapacityFromChat;
+                }
+            }
+
+            addChatMessage(message, true);
+            input.value = '';
+
+            try {
+                const response = await fetch(`${API_URL}/api/query`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message})
+                });
+                const data = await response.json();
+
+                let reply = data.answer;
+                if (data.rooms && data.rooms.length > 0) {
+                    reply += '<br><br><b>Найденные аудитории:</b><br>';
+                    data.rooms.forEach(r => {
+                        reply += `<br>🏫 <b>${r.number}</b> (корпус ${r.building}, этаж ${r.floor})<br>`;
+                        reply += `Вместимость: ${r.capacity} чел. | ${r.type}<br>`;
+                        reply += `Оборудование: ${r.equipment}`;
+                        if (r.has_computers) reply += ` | 💻 ${r.computer_count} ПК`;
+                    });
+                    // Сохраняем результаты для бронирования
+                    lastSearchResults = data.rooms;
+                }
+                addChatMessage(reply);
+            } catch (error) {
+                addChatMessage('❌ Ошибка соединения с сервером!');
+            }
+        }
+
+        // Загрузка аудиторий (только из последнего поиска)
+        async function loadRooms() {
+            const container = document.getElementById('roomsList');
+            container.innerHTML = '';
+
+            if (lastSearchResults.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">Сначала сделайте запрос в чате</p>';
+                return;
+            }
+
+            lastSearchResults.forEach(room => {
+                const card = document.createElement('div');
+                card.className = 'room-card';
+                card.onclick = () => selectRoom(room.number, card);
+                card.innerHTML = `
+                    <h3>🏫 Аудитория ${room.number}</h3>
+                    <p>📍 Корпус ${room.building}, Этаж ${room.floor}</p>
+                    <p>👥 Вместимость: ${room.capacity} человек</p>
+                    <p>🔧 ${room.equipment}</p>
+                    ${room.has_computers ? `<p>💻 Компьютеров: ${room.computer_count}</p>` : ''}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function selectRoom(roomNumber, cardElement) {
+            document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            selectedRoomNumber = roomNumber;
+        }
+
+        // Создание бронирования
+        async function createBooking() {
+            if (!selectedRoomNumber) {
+                showAlert('Выберите аудиторию!', 'error');
+                return;
+            }
+
+            // Если количество студентов не введено вручную, но есть число из чата – подставляем его
+            const studentsInput = document.getElementById('studentsCount');
+            if (!studentsInput.value && lastCapacityFromChat) {
+                studentsInput.value = lastCapacityFromChat;
+            }
+
+            const booking = {
+                room_number: selectedRoomNumber,
+                teacher_name: document.getElementById('teacherName').value,
+                group_name: document.getElementById('groupName').value,
+                date: document.getElementById('bookingDate').value,
+                time_start: document.getElementById('timeStart').value,
+                time_end: document.getElementById('timeEnd').value,
+                students_count: parseInt(document.getElementById('studentsCount').value) || 0,
+                equipment_needed: document.getElementById('equipmentNeeded').value
+            };
+
+            if (!booking.teacher_name || !booking.date || !booking.time_start || !booking.time_end) {
+                showAlert('Заполните все обязательные поля!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/book`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(booking)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    // Очистка формы
+                    document.getElementById('teacherName').value = '';
+                    document.getElementById('groupName').value = '';
+                    document.getElementById('studentsCount').value = '';
+                    document.getElementById('equipmentNeeded').value = '';
+                    selectedRoomNumber = null;
+                    document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('Ошибка создания бронирования!', 'error');
+            }
+        }
+
+        function showAlert(message, type) {
+            // Старый алерт сверху формы
+            const alert = document.getElementById('bookingAlert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            // Новое центрированное уведомление
+            const toast = document.createElement('div');
+            toast.className = `center-toast center-toast-${type === 'success' ? 'success' : 'error'}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                alert.style.display = 'none';
+                if (toast && toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 3000);
+        }
+
+        // Загрузка броней
+        async function loadBookings() {
+            try {
+                const response = await fetch(`${API_URL}/api/bookings`);
+                const data = await response.json();
+
+                const container = document.getElementById('bookingsList');
+                container.innerHTML = '';
+
+                if (data.bookings.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">Нет бронирований</p>';
+                    return;
+                }
+
+                data.bookings.forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'booking-item';
+                    item.innerHTML = `
+                        <h4>🏫 Аудитория ${b.number} (${b.building})</h4>
+                        <div class="booking-info">
+                            <div>👤 ${b.teacher_name}</div>
+                            <div>👥 ${b.group_name || 'Не указана'}</div>
+                            <div>📅 ${b.date}</div>
+                            <div>⏰ ${b.time_start} - ${b.time_end}</div>
+                            <div>👥 Студентов: ${b.students_count}</div>
+                            <div><span class="status-badge status-approved">✅ Одобрено</span></div>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки броней:', error);
+            }
+        }
+
+        // Ручной поиск
+        function clearManualSearch() {
+            document.getElementById('manualBuilding').value = '';
+            document.getElementById('manualFloor').value = '';
+            document.getElementById('manualType').value = '';
+            document.getElementById('manualCapacity').value = '';
+            document.getElementById('manualEquipment').value = '';
+            document.getElementById('manualResults').innerHTML = '';
+        }
+
+        async function searchManualRooms() {
+            const building = document.getElementById('manualBuilding').value;
+            const floor = document.getElementById('manualFloor').value;
+            const type = document.getElementById('manualType').value;
+            const capacity = document.getElementById('manualCapacity').value;
+            const equipment = document.getElementById('manualEquipment').value;
+
+            try {
+                let url = `${API_URL}/api/rooms?`;
+                if (building) url += `&building=${building}`;
+                if (floor) url += `&floor=${floor}`;
+                if (type) url += `&type=${encodeURIComponent(type)}`;
+                if (capacity) url += `&capacity=${capacity}`;
+                if (equipment) url += `&equipment=${encodeURIComponent(equipment)}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const container = document.getElementById('manualResults');
+                container.innerHTML = '';
+
+                if (data.rooms.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;">Нет подходящих аудиторий</p>';
+                    return;
+                }
+
+                data.rooms.forEach(room => {
+                    const card = document.createElement('div');
+                    card.className = 'room-card';
+                    card.onclick = () => selectRoomForManual(room.number, card);
+                    card.innerHTML = `
+                        <h3>🏫 Аудитория ${room.number}</h3>
+                        <p>📍 Корпус ${room.building}, Этаж ${room.floor}</p>
+                        <p>👥 Вместимость: ${room.capacity} человек</p>
+                        <p>🔧 ${room.equipment}</p>
+                        ${room.has_computers ? `<p>💻 Компьютеров: ${room.computer_count}</p>` : ''}
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Ошибка поиска аудиторий:', error);
+            }
+        }
+
+        function selectRoomForManual(roomNumber, cardElement) {
+            document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            selectedRoomNumber = roomNumber;
+
+            // Автоматически переключаемся на вкладку бронирования
+            switchTab('booking');
+        }
+
+        // Установка минимальной даты (сегодня)
+        document.getElementById('bookingDate').min = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>
